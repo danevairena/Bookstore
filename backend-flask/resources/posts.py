@@ -48,7 +48,7 @@ class Post(Resource):
     # Delete post
     def delete (self, post_id):
         # Check if post doesn't exist
-        abort_if_id_not_found()
+        abort_if_id_not_found(post_id)
         # Delete and return 204 status code for successful deletion 
         del posts[post_id]
         return '', 204

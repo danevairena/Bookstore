@@ -3,14 +3,11 @@
 
 from flask import Flask
 from flask_restful import Api
+from flask_sqlalchemy import SQLAlchemy
 
 
 # Enable Cross Origin Resource Sharing (CORS)
 from flask_cors import CORS
-
-
-# Import database
-from models import db, setup_db
 
 
 # Import datetime module for showing date and time
@@ -30,6 +27,13 @@ app = Flask(__name__.split('.')[0])
 
 # Include an extra API(app) instance to indicate Flask that this is a REST API web app
 api = Api(app)
+
+
+# Change configuration settings - define what we want the location of our database to be
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db '
+# Initialize database
+db = SQLAlchemy(app)
+
 
 
 # Initialize the Flask-Cors extension with default arguments to allow CORS for all domains on all routes

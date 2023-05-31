@@ -1,17 +1,10 @@
 #file for database creation
-import os
-import datetime
+
 from flask_sqlalchemy import SQLAlchemy
+import datetime
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+
 db = SQLAlchemy()
-
-
-def setup_db(app, database_path=DATABASE_URL):
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_path
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-    db.init_app(app=app)
 
 
 def drop_and_create_all():
@@ -19,31 +12,16 @@ def drop_and_create_all():
     db.create_all()
 
 
-class Table(db.Model):
-    __tablename__ = "table"
+class PostModel(db.Model):
+    __tablename__ = "Posts"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(1000), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
-    def __init__(self, name, created_at=None):
-        self.name = name
-        self.created_at = created_at
 
-    def insert(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def update(self):
-        db.session.commit()
-
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
-
-    def format(self):
-        return ({
-            "id": self.id,
-            "name": self.name,
-            "created_at": datetime.datetime.strftime(self.created_at, '%Y-%m-%d %H:%M:%S.%f')
-        })
+    def __repr__(self):
+        return f"Post(name = {self.name}, description = {self.description}, price = {self.price}, created_at = {self.created_at})"
