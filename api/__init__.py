@@ -13,8 +13,10 @@ from flask_migrate import Migrate
 # Flask-Login extension manages the user logged-in state, so that for example users can log in to the application 
 # and then navigate to different pages while the application "remembers" that the user is logged in.
 from flask_login import LoginManager
+
 # Flask extension for sending e-mails
 from flask_mail import Mail
+
 
 
 app = Flask(__name__)
