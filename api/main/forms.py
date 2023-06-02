@@ -3,14 +3,10 @@
 
 from flask_wtf import FlaskForm
 # The field types used for this form,imported directly from the WTForms
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
+from wtforms import StringField, SubmitField, TextAreaField, IntegerField
+from wtforms.validators import ValidationError, DataRequired, Length
 from api.models import User
 
-
-
-
-        
 # Profile editor form
 class EditProfileForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -39,9 +35,9 @@ class EmptyForm(FlaskForm):
 
 # Listing submission form.
 class PostForm(FlaskForm):
-    post_title = TextAreaField('Say something', validators=[
+    post_title = TextAreaField('Title', validators=[
         DataRequired(), Length(min=1, max=50)])
-    description = TextAreaField('Say something', validators=[
+    description = TextAreaField('Description', validators=[
         DataRequired(), Length(min=1, max=200)])
+    price = IntegerField('Price', validators=[DataRequired()])
     submit = SubmitField('Submit')
-
