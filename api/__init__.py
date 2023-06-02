@@ -1,6 +1,5 @@
-from flask import Flask, request, current_app
+from flask import Flask
 from config import Config
-import os
 
 # SQLAlchemy package is an Object Relational Mapper(ORM), that allows the application to manage 
 # a database using high-level entities such as classes, objects and methods instead of tables and SQL.
@@ -47,6 +46,7 @@ def create_app(config_class=Config):
     login.init_app(app)
     mail.init_app(app)
 
+    # To register a blueprints, the register_blueprint() method of the Flask application instance is used
     from api.errors import bp as errors_bp
     app.register_blueprint(errors_bp)
 
