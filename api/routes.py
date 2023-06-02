@@ -26,6 +26,12 @@ def index():
     page = request.args.get('page', 1, type=int)
     posts = current_user.followed_posts().paginate(
         page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # The next_url and prev_url in these two view functions are going to be set to a URL returned by 
+    # url_for() only if there is a page in that direction.
+    next_url = url_for('index', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('index', page=posts.prev_num) \
+        if posts.has_prev else None
     # TODO ---------
     return 
 
@@ -38,6 +44,12 @@ def explore():
     page = request.args.get('page', 1, type=int)
     posts = Post.query.order_by(Post.timestamp.desc()).paginate(
         page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # The next_url and prev_url in these two view functions are going to be set to a URL returned by 
+    # url_for() only if there is a page in that direction.
+    next_url = url_for('explore', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) \
+        if posts.has_prev else None
     # TODO ---------
     return
 
@@ -125,6 +137,15 @@ def user(username):
     # first_or_404(), which works exactly like first() when there are results, 
     # but in the case that there are no results automatically sends a 404 error back to the client.
     user = User.query.filter_by(username=username).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # url_for() function need the extra username argument, because they are pointing back at the user profile page, 
+    # which has this username as a dynamic component of the URL
+    next_url = url_for('user', username=user.username, page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) \
+        if posts.has_prev else None
     # Follow or unfollow button needs instance of an EmptyForm object (then pass it)
     # To reuse the EmptyForm() instance for both the follow and unfollow forms, you need to pass a value argument when rendering the submit button
     form = EmptyForm()
