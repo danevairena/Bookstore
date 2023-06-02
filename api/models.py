@@ -1,5 +1,6 @@
 from datetime import datetime
-from api import db, app
+from api import db, login
+from flask import current_app
 # Werkzeug implements password hashing - the password is transformed into a long encoded string 
 # through a series of cryptographic operations that have no known reverse operation, which means 
 # that a person that obtains the hashed password will be unable to use it to obtain the original password.
@@ -15,21 +16,12 @@ from time import time
 import jwt
 
 
-
-# Flask-Login knows nothing about databases, so the extension expects that the application will 
-# configure a user loader function, that can be called to load a user given the ID.
-# The user loader is registered with Flask-Login with the @login.user_loader decorator. 
-# The id that Flask-Login passes to the function as an argument needs to be a string
-@login.user_loader
-def load_user(id):
-    return User.query.get(int(id))
-
-
 # This is an auxiliary table that has no data other than the foreign keys, so it's created without an associated model class
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
+
 
 # The User class inherits from db.Model, a base class for all models from Flask-SQLAlchemy. 
 class User(UserMixin, db.Model):
@@ -39,6 +31,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+
     # db.relationship is not an actual database field, but a high-level view of the relationship between users and posts
     # For a one-to-many relationship, a db.relationship field is normally defined on the "one" side, 
     # and is used as a convenient way to get access to the "many".
@@ -46,6 +39,23 @@ class User(UserMixin, db.Model):
     # The backref argument defines the name of a field that will be added to the objects of the "many" class that points back at the "one" object.
     # This will add a post.author expression that will return the user given a post
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    
+    # db.relationship function is used to define the relationship in the model class
+    # This relationship links User instances to other User instances
+    # Example: let's say that for a pair of users linked by this relationship, the left side user is following the right side user. 
+    # The relationship is defined as seen from the left side user with the name followed, because when I query this relationship 
+    # from the left side I will get the list of followed users (i.e those on the right side)
+    followed = db.relationship(
+        # 'User' is the right side entity of the relationship (the left side entity is the parent class)
+        # secondary configures the association table that is used for this relationship
+        'User', secondary=followers,
+        # primaryjoin indicates the condition that links the left side entity (the follower user) with the association table.
+        primaryjoin=(followers.c.follower_id == id),
+        # secondaryjoin indicates the condition that links the right side entity (the followed user) with the association table.
+        secondaryjoin=(followers.c.followed_id == id),
+        # backref defines how this relationship will be accessed from the right side entity.
+        # lazy is similar to the parameter of the same name in the backref, but this one applies to the left side query instead of the right side.
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
 
     # The __repr__ method tells Python how to print objects of this class
     def __repr__(self):
@@ -66,23 +76,6 @@ class User(UserMixin, db.Model):
         # For users that don't have an avatar registered, an "identicon" image will be generated
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
-    
-    # db.relationship function is used to define the relationship in the model class
-    # This relationship links User instances to other User instances
-    # Example: let's say that for a pair of users linked by this relationship, the left side user is following the right side user. 
-    # The relationship is defined as seen from the left side user with the name followed, because when I query this relationship 
-    # from the left side I will get the list of followed users (i.e those on the right side)
-    followed = db.relationship(
-        # 'User' is the right side entity of the relationship (the left side entity is the parent class)
-        # secondary configures the association table that is used for this relationship
-        'User', secondary=followers,
-        # primaryjoin indicates the condition that links the left side entity (the follower user) with the association table.
-        primaryjoin=(followers.c.follower_id == id),
-        # secondaryjoin indicates the condition that links the right side entity (the followed user) with the association table.
-        secondaryjoin=(followers.c.followed_id == id),
-        # backref defines how this relationship will be accessed from the right side entity.
-        # lazy is similar to the parameter of the same name in the backref, but this one applies to the left side query instead of the right side.
-        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
     
     # The follow() and unfollow() methods use the append() and remove() methods of the relationship object
     def follow(self, user):
@@ -117,19 +110,28 @@ class User(UserMixin, db.Model):
     def get_reset_password_token(self, expires_in=600):
         return jwt.encode(
             {'reset_password': self.id, 'exp': time() + expires_in},
-            app.config['SECRET_KEY'], algorithm='HS256')
+            current_app.config['SECRET_KEY'], algorithm='HS256')
     # The verify_reset_password_token() is a static method, which means that it can be invoked directly from the class.
     # This method takes a token and attempts to decode it by invoking PyJWT's jwt.decode() function
     @staticmethod
     def verify_reset_password_token(token):
         # If the token cannot be validated or is expired, an exception will be raised, the error will be catched and then returns None to the caller.
         try:
-            id = jwt.decode(token, app.config['SECRET_KEY'],
+            id = jwt.decode(token, current_app.config['SECRET_KEY'],
                             algorithms=['HS256'])['reset_password']
         except:
             return
         # If the token is valid, then the value of the reset_password key from the token's payload is the ID of the user, so I can load the user and return it.
         return User.query.get(id)
+
+# Flask-Login knows nothing about databases, so the extension expects that the application will 
+# configure a user loader function, that can be called to load a user given the ID.
+# The user loader is registered with Flask-Login with the @login.user_loader decorator. 
+# The id that Flask-Login passes to the function as an argument needs to be a string
+@login.user_loader
+def load_user(id):
+    return User.query.get(int(id))
+
 
 # The new Post class will represent listings posted by users   
 class Post(db.Model):
