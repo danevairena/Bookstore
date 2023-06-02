@@ -1,5 +1,5 @@
 from datetime import datetime
-from api import db
+from api import db, app
 # Werkzeug implements password hashing - the password is transformed into a long encoded string 
 # through a series of cryptographic operations that have no known reverse operation, which means 
 # that a person that obtains the hashed password will be unable to use it to obtain the original password.
@@ -10,6 +10,9 @@ from flask_login import UserMixin
 from api import login
 # MD5 hashes of the user's email address and generates profile avatars
 from hashlib import md5
+from time import time
+# JSON Web Token
+import jwt
 
 
 
@@ -109,6 +112,24 @@ class User(UserMixin, db.Model):
         # order_by query sorts the results by the timestamp field of the post in descending order - the first result will be the most recent post
         return followed.union(own).order_by(Post.timestamp.desc())
 
+    # Token generation and verification methods
+    # The get_reset_password_token() function returns a JWT token as a string, which is generated directly by the jwt.encode() function.
+    def get_reset_password_token(self, expires_in=600):
+        return jwt.encode(
+            {'reset_password': self.id, 'exp': time() + expires_in},
+            app.config['SECRET_KEY'], algorithm='HS256')
+    # The verify_reset_password_token() is a static method, which means that it can be invoked directly from the class.
+    # This method takes a token and attempts to decode it by invoking PyJWT's jwt.decode() function
+    @staticmethod
+    def verify_reset_password_token(token):
+        # If the token cannot be validated or is expired, an exception will be raised, the error will be catched and then returns None to the caller.
+        try:
+            id = jwt.decode(token, app.config['SECRET_KEY'],
+                            algorithms=['HS256'])['reset_password']
+        except:
+            return
+        # If the token is valid, then the value of the reset_password key from the token's payload is the ID of the user, so I can load the user and return it.
+        return User.query.get(id)
 
 # The new Post class will represent listings posted by users   
 class Post(db.Model):

@@ -13,11 +13,8 @@ from flask_migrate import Migrate
 # Flask-Login extension manages the user logged-in state, so that for example users can log in to the application 
 # and then navigate to different pages while the application "remembers" that the user is logged in.
 from flask_login import LoginManager
-
-# Flask uses Python's logging package to write its logs, and this package already has the ability to send logs by email.
-# To get emails sent out on errors need to add a SMTPHandler instance to the Flask logger object, which is app.logger
-import logging
-from logging.handlers import SMTPHandler
+# Flask extension for sending e-mails
+from flask_mail import Mail
 
 
 app = Flask(__name__)
@@ -38,5 +35,7 @@ login.login_view = 'login'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+# To use Mail you need to create an instance - object of class Mail
+mail = Mail(app)
 
 from api import routes, models
