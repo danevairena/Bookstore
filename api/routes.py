@@ -1,9 +1,10 @@
 from api import app, db
-from api.forms import LoginForm, RegistrationForm
+from api.forms import LoginForm, RegistrationForm, EditProfileForm
 from flask import redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from api.models import User
 from werkzeug.urls import url_parse
+from datetime import datetime
 
 @app.route('/')
 
@@ -88,4 +89,52 @@ def register():
         # Redirect to the login prompt so that the user can log in.
         return redirect(url_for('login'))
     # TODO ----------
+    return 
+
+# User profile view function
+# URL component that is surrounded by < and > is dynamic - <username>
+@app.route('/user/<username>')
+@login_required
+def user(username):
+    # Try to load the user from the database using a query by the username.
+    # first_or_404(), which works exactly like first() when there are results, 
+    # but in the case that there are no results automatically sends a 404 error back to the client.
+    user = User.query.filter_by(username=username).first_or_404()
+    # If the given username was found - initialize a fake list of posts for this user
+    posts = [
+        {'author': user, 'body': 'Test post #1'},
+        {'author': user, 'body': 'Test post #2'}
+    ]
+    # TODO ------------
+    return 
+
+# Recording the last visit time for a user
+# The @before_request decorator register the decorated function to be executed right before the view function
+# This is code that I want to execute before any view function in the application, and I can have it in a single place.
+@app.before_request
+def before_request():
+    # checks if the current_user is logged in, and in that case sets the last_seen field to the current time
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        # Commit the database session, so that the change made above is written to the database
+        db.session.commit()
+
+
+# Edit profile view function
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    # If validate_on_submit() returns True - copy the data from the form into the user object and then write the object to the database.
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.about_me = form.about_me.data
+        db.session.commit()
+        return redirect(url_for('edit_profile'))
+    # Check request.method, which will be GET for the initial request, and POST for a submission that failed validation
+    # If the browser sent a GET request, need to respond by providing an initial version of the form template
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.about_me.data = current_user.about_me
+    # TODO -------------
     return 

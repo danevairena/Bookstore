@@ -3,8 +3,8 @@
 
 from flask_wtf import FlaskForm
 # The field types used for this form,imported directly from the WTForms
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import ValidationError, DataRequired, Email, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField
+from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length
 from api.models import User
 
 
@@ -44,3 +44,11 @@ class RegistrationForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user is not None:
             raise ValidationError('Please use a different email address.')
+        
+# Profile editor form
+class EditProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    # TextAreaField is a multi-line box in which the user can enter text. To validate this field is used Length, which will make sure that 
+    # the text entered is between 0 and 140 characters, which is the space I have allocated for the corresponding field in the database.
+    about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+    submit = SubmitField('Submit')

@@ -8,6 +8,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # Flask-Login provides class called UserMixin that includes generic implementations that are appropriate for most user model classes
 from flask_login import UserMixin
 from api import login
+# MD5 hashes of the user's email address and generates profile avatars
+from hashlib import md5
+
+
 
 # Flask-Login knows nothing about databases, so the extension expects that the application will 
 # configure a user loader function, that can be called to load a user given the ID.
@@ -25,6 +29,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
+    about_me = db.Column(db.String(140))
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     # db.relationship is not an actual database field, but a high-level view of the relationship between users and posts
     # For a one-to-many relationship, a db.relationship field is normally defined on the "one" side, 
     # and is used as a convenient way to get access to the "many".
@@ -44,6 +50,14 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    # The avatar() method of the User class returns the URL of the user's avatar image, scaled to the requested size in pixels.
+    def avatar(self, size):
+        # To generate the MD5 hash, first need to convert the email to lower case, as this is required by the Gravatar service. 
+        # Then, because the MD5 support in Python works on bytes and not on strings, encode the string as bytes before passing it on to the hash function
+        # For users that don't have an avatar registered, an "identicon" image will be generated
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
 
 
 # The new Post class will represent listings posted by users   
