@@ -17,6 +17,10 @@ app = Flask(__name__)
 app.config.from_object(Config)
 # As with other extensions, Flask-Login needs to be created and initialized
 login = LoginManager(app)
+# Flask-Login provides feature that forces users to log in before they can view certain pages of the application. 
+# If a user who is not logged in tries to view a protected page, flask will automatically redirect the user to the login form
+# To implement this feature, Flask-Login needs to know what is the view function that handles logins.
+login.login_view = 'login'
 
 # The database is going to be represented in the application by the database instance. 
 # The database migration engine will also have an instance. 
