@@ -52,3 +52,17 @@ class EditProfileForm(FlaskForm):
     # the text entered is between 0 and 140 characters, which is the space I have allocated for the corresponding field in the database.
     about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
     submit = SubmitField('Submit')
+
+    def __init__(self, original_username, *args, **kwargs):
+        super(EditProfileForm, self).__init__(*args, **kwargs)
+        self.original_username = original_username
+
+
+    # Check if the username entered in the form does already exists in the database, but with one exception - if the user leaves the original 
+    # username untouched, then the validation should allow it, since that username is already assigned to that user.
+    # validate_username() is an overloaded constructor that accepts the original username as an argument
+    def validate_username(self, username):
+        if username.data != self.original_username:
+            user = User.query.filter_by(username=self.username.data).first()
+            if user is not None:
+                raise ValidationError('Please use a different username.')

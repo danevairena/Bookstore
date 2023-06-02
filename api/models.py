@@ -22,6 +22,11 @@ def load_user(id):
     return User.query.get(int(id))
 
 
+# This is an auxiliary table that has no data other than the foreign keys, so it's created without an associated model class
+followers = db.Table('followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
+)
 
 # The User class inherits from db.Model, a base class for all models from Flask-SQLAlchemy. 
 class User(UserMixin, db.Model):
@@ -58,6 +63,51 @@ class User(UserMixin, db.Model):
         # For users that don't have an avatar registered, an "identicon" image will be generated
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
+    
+    # db.relationship function is used to define the relationship in the model class
+    # This relationship links User instances to other User instances
+    # Example: let's say that for a pair of users linked by this relationship, the left side user is following the right side user. 
+    # The relationship is defined as seen from the left side user with the name followed, because when I query this relationship 
+    # from the left side I will get the list of followed users (i.e those on the right side)
+    followed = db.relationship(
+        # 'User' is the right side entity of the relationship (the left side entity is the parent class)
+        # secondary configures the association table that is used for this relationship
+        'User', secondary=followers,
+        # primaryjoin indicates the condition that links the left side entity (the follower user) with the association table.
+        primaryjoin=(followers.c.follower_id == id),
+        # secondaryjoin indicates the condition that links the right side entity (the followed user) with the association table.
+        secondaryjoin=(followers.c.followed_id == id),
+        # backref defines how this relationship will be accessed from the right side entity.
+        # lazy is similar to the parameter of the same name in the backref, but this one applies to the left side query instead of the right side.
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+    
+    # The follow() and unfollow() methods use the append() and remove() methods of the relationship object
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.append(user)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.followed.remove(user)
+
+    # The is_following() method issues a query on the followed relationship to check if a link between two users already exists. 
+    def is_following(self, user):
+        return self.followed.filter(
+            followers.c.followed_id == user.id).count() > 0
+    
+    # Query to obtain the posts from followed users
+    def followed_posts(self):
+        # First query that returns followed posts by the user 
+        # With the join() the database to creates a temporary table that combines data from posts and followers tables
+        # The filter() call selects the items in the joined table that have the follower_id column set to this user (keep only the entries that have this user as a follower)
+        followed = Post.query.join(
+            followers, (followers.c.followed_id == Post.user_id)).filter(
+                followers.c.follower_id == self.id)
+        # Second query that returns the user's own posts
+        own = Post.query.filter_by(user_id=self.id)
+        # The "union" operator to combine the two queries into a single one.
+        # order_by query sorts the results by the timestamp field of the post in descending order - the first result will be the most recent post
+        return followed.union(own).order_by(Post.timestamp.desc())
 
 
 # The new Post class will represent listings posted by users   
