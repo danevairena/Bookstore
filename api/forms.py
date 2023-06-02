@@ -66,3 +66,15 @@ class EditProfileForm(FlaskForm):
             user = User.query.filter_by(username=self.username.data).first()
             if user is not None:
                 raise ValidationError('Please use a different username.')
+
+# Form where the only thing the user needs to do is click on "Follow" or "Unfollow", without submitting any data            
+class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')
+
+# Listing submission form.
+class PostForm(FlaskForm):
+    post_title = TextAreaField('Say something', validators=[
+        DataRequired(), Length(min=1, max=50)])
+    description = TextAreaField('Say something', validators=[
+        DataRequired(), Length(min=1, max=200)])
+    submit = SubmitField('Submit')

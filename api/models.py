@@ -118,6 +118,7 @@ class Post(db.Model):
     # The timestamp field is going to be indexed, which is useful if you want to retrieve posts in chronological order
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     # The user_id field references an id value from the users table
+    price = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):

@@ -1,5 +1,5 @@
 from api import app, db
-from api.forms import LoginForm, RegistrationForm, EditProfileForm
+from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm
 from flask import redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from api.models import User
@@ -100,11 +100,9 @@ def user(username):
     # first_or_404(), which works exactly like first() when there are results, 
     # but in the case that there are no results automatically sends a 404 error back to the client.
     user = User.query.filter_by(username=username).first_or_404()
-    # If the given username was found - initialize a fake list of posts for this user
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
+    # Follow or unfollow button needs instance of an EmptyForm object (then pass it)
+    # To reuse the EmptyForm() instance for both the follow and unfollow forms, you need to pass a value argument when rendering the submit button
+    form = EmptyForm()
     # TODO ------------
     return 
 
@@ -138,3 +136,42 @@ def edit_profile():
         form.about_me.data = current_user.about_me
     # TODO -------------
     return 
+
+
+@app.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow(username):
+    form = EmptyForm()
+    # The only reason why the validate_on_submit() call can fail is if the CSRF token is missing or invalid, 
+    # so in that case just redirect the application back to the home page
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        if user is None:        
+            return redirect(url_for('index'))
+        if user == current_user:
+            return redirect(url_for('user', username=username))
+        current_user.follow(user)
+        db.session.commit()
+        return redirect(url_for('user', username=username))
+    else:
+        return redirect(url_for('index'))
+
+@app.route('/unfollow/<username>', methods=['POST'])
+@login_required
+def unfollow(username):
+    form = EmptyForm()
+    # The only reason why the validate_on_submit() call can fail is if the CSRF token is missing or invalid, 
+    # so in that case just redirect the application back to the home page
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=username).first()
+        if user is None:
+            return redirect(url_for('index'))
+        if user == current_user:
+            return redirect(url_for('user', username=username))
+        current_user.unfollow(user)
+        db.session.commit()
+        return redirect(url_for('user', username=username))
+    else:
+        return redirect(url_for('index'))
+    
+
