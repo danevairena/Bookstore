@@ -1,20 +1,45 @@
 from api import app, db
-from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm
+from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm
 from flask import redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
-from api.models import User
+from api.models import Post, User
 from werkzeug.urls import url_parse
 from datetime import datetime
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 
-
-@app.route('/index')
+@app.route('/index', methods=['GET', 'POST'])
 # The way Flask-Login protects a view function against anonymous users is with a decorator called @login_required
 @login_required
 def index():
-    return "Hello, World!"
+    # The form processing logic inserts a new Post record into the database.
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, author=current_user)
+        db.session.add(post)
+        db.session.commit()
+        # Redirecting is to avoid re-submitting the form like re-fresh page does
+        return redirect(url_for('index'))
+    # Display real posts
+    # Determine the page number to display, either from the page query string argument or a default 
+    # of 1, and then use the paginate() method to retrieve only the desired page of results.
+    page = request.args.get('page', 1, type=int)
+    posts = current_user.followed_posts().paginate(
+        page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # TODO ---------
+    return 
 
+# Works like the home page, but it shows posts from all user, instead of only the followed ones
+@app.route('/explore')
+@login_required
+def explore():
+    # Determine the page number to display, either from the page query string argument or a default 
+    # of 1, and then use the paginate() method to retrieve only the desired page of results.
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # TODO ---------
+    return
 
 # The methods argument in the route decorator tells Flask that this view function 
 # accepts GET and POST requests, overriding the default, which is to accept only GET requests.

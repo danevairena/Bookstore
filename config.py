@@ -13,3 +13,6 @@ class Config(object):
         'sqlite:///' + os.path.join(basedir, 'app.db')
     # Sending a signal to the application every time a change is about to be made in the database is disabled
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+
+    POSTS_PER_PAGE = 10
