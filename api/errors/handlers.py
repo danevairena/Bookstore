@@ -2,6 +2,8 @@
 # so that your users don't have to see the plain and boring default ones.
 
 from api import db
+
+# Import blueprint
 from api.errors import bp
 
 # instead of attaching the error handlers to the application with the @app.errorhandler decorator, 
