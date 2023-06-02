@@ -1,8 +1,9 @@
 # Main application module
 
-from api import app, db
+from api import create_app, db
 from api.models import User, Post
 
+app = create_app()
 
 # With a regular interpreter session, the app symbol is not known unless it is explicitly imported, 
 # but when using flask shell, the command pre-imports the application instance.

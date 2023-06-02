@@ -1,22 +1,20 @@
-import os
-# By setting the DATABASE_URL environment variable to sqlite://, I change the application configuration 
-# to direct SQLAlchemy to use an in-memory SQLite database during the tests.
-os.environ['DATABASE_URL'] = 'sqlite://'
-
+#!/usr/bin/env python
 from datetime import datetime, timedelta
 import unittest
-from api import app, db
+from api import create_app, db
 from api.models import User, Post
+from config import Config
 
 
-# Four tests that exercise the password hashing, user avatar and followers functionality in the user model. 
-# The setUp() and tearDown() methods are special methods that the unit testing framework executes before and after each test respectively.
-# The setUp() method then creates an application context and pushes it.
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite://'
 
 
 class UserModelCase(unittest.TestCase):
     def setUp(self):
-        self.app_context = app.app_context()
+        self.app = create_app(TestConfig)
+        self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
 
@@ -70,13 +68,13 @@ class UserModelCase(unittest.TestCase):
 
         # create four posts
         now = datetime.utcnow()
-        p1 = Post(author=u1,
+        p1 = Post(body="post from john", author=u1,
                   timestamp=now + timedelta(seconds=1))
-        p2 = Post(author=u2,
+        p2 = Post(body="post from susan", author=u2,
                   timestamp=now + timedelta(seconds=4))
-        p3 = Post(author=u3,
+        p3 = Post(body="post from mary", author=u3,
                   timestamp=now + timedelta(seconds=3))
-        p4 = Post(author=u4,
+        p4 = Post(body="post from david", author=u4,
                   timestamp=now + timedelta(seconds=2))
         db.session.add_all([p1, p2, p3, p4])
         db.session.commit()
@@ -97,6 +95,7 @@ class UserModelCase(unittest.TestCase):
         self.assertEqual(f2, [p2, p3])
         self.assertEqual(f3, [p3, p4])
         self.assertEqual(f4, [p4])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
