@@ -21,11 +21,20 @@ class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     # The second validator - Email will ensure that what the user types in this field matches the structure of an email address
     email = StringField('Email', validators=[DataRequired(), Email()])
+    # Since this is a registration form, it is customary to ask the user to type the password two times to reduce the risk of a typo
+    # password2 field uses another validator - EqualTo, which will make sure that its value is identical to the first password field.
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Register')
 
+
+    # When you add any methods that match the pattern validate_<field_name>, WTForms takes those as custom validators 
+    # and invokes them in addition to the stock validators.
+    # Validating username and email is to make sure that the username and email address entered by the user are not already in the database
+    # these two methods issue database queries expecting there will be no results. 
+    # If a result exists, a validation error is triggered by raising an exception of type ValidationError
+    # The message included as the argument in the exception will be the message that will be displayed next to the field for the user to see.
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user is not None:

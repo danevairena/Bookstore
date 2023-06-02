@@ -1,5 +1,5 @@
-from api import app
-from api.forms import LoginForm
+from api import app, db
+from api.forms import LoginForm, RegistrationForm
 from flask import redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from api.models import User
@@ -50,13 +50,6 @@ def login():
     # TODO ---------------
     return 
 
-# Also need to offer users the option to log out of the application
-@app.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
-
-
 
 # view function that accepts and validates the data submitted by the user
 def login():
@@ -72,3 +65,27 @@ def login():
         return redirect(url_for('index'))
     # TODO --------------
     return 404
+
+# Also need to offer users the option to log out of the application
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+# View function that is going to handle user registrations
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    # Make sure the user that invokes this route is not logged in
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        # Creates a new user with the username, email and password provided and then writes it to the database
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        # Redirect to the login prompt so that the user can log in.
+        return redirect(url_for('login'))
+    # TODO ----------
+    return 
