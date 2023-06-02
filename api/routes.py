@@ -1,9 +1,5 @@
-from api import app, db
-from api.forms import LoginForm, EditProfileForm, EmptyForm, PostForm
-from flask import redirect, url_for, request
-from flask_login import current_user, login_required
-from api.models import Post, User
-from datetime import datetime
+
+from flask import redirect, url_for
 
 
 
