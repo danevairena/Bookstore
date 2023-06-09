@@ -1,9 +1,9 @@
 from api import app, db
 from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm, ResetPasswordRequestForm
-from api.forms import ResetPasswordForm
+from api.forms import ResetPasswordForm, MessageForm
 from flask import redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
-from api.models import Post, User
+from api.models import Post, User, Message
 from werkzeug.urls import url_parse
 from datetime import datetime
 from api.email import send_password_reset_email
@@ -259,3 +259,41 @@ def reset_password(token):
         return redirect(url_for('login'))
     # TODO ---------
     return 
+
+# View function to handle sending private message
+@app.route('/send_message/<recipient>', methods=['GET', 'POST'])
+@login_required
+# The action of sending a private message is carried out by adding a new Message instance to the database.
+def send_message(recipient):
+    user = User.query.filter_by(username=recipient).first_or_404()
+    form = MessageForm()
+    if form.validate_on_submit():
+        msg = Message(author=current_user, recipient=user,
+                      body=form.message.data)
+        db.session.add(msg)
+        db.session.commit()
+        return redirect(url_for('main.user', username=recipient))
+    # TODO -------------
+    return 
+
+# View messages route
+# Works in a similar way to the index and explore pages, including full support for pagination
+@app.route('/messages')
+@login_required
+def messages():
+    # update the User.last_message_read_time field with the current time
+    current_user.last_message_read_time = datetime.utcnow()
+    db.session.commit()
+    page = request.args.get('page', 1, type=int)
+    # Querying the Message model for the list of messages, sorted by timestamp from newer to older.
+    messages = current_user.messages_received.order_by(
+        Message.timestamp.desc()).paginate(
+            page=page, per_page=app.config['MESSAGES_PER_PAGE'],
+            error_out=False)
+    next_url = url_for('main.messages', page=messages.next_num) \
+        if messages.has_next else None
+    prev_url = url_for('main.messages', page=messages.prev_num) \
+        if messages.has_prev else None
+    # TODO -------
+    return 
+
