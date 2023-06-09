@@ -15,3 +15,7 @@ def internal_error(error):
     db.session.rollback()
     # TODO --------
     return 500
+
+# Error handling placeholder.
+def bad_request():
+    pass

@@ -40,4 +40,4 @@ migrate = Migrate(app, db)
 # To use Mail you need to create an instance - object of class Mail
 mail = Mail(app)
 
-from api import routes, models
+from api import routes, models, users, tokens
