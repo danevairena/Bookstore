@@ -47,6 +47,36 @@ class User(UserMixin, db.Model):
     # This will add a post.author expression that will return the user given a post
     posts = db.relationship('Post', backref='author', lazy='dynamic')
 
+    # db.relationship function is used to define the relationship in the model class
+    # This relationship links User instances to other User instances
+    # Example: let's say that for a pair of users linked by this relationship, the left side user is following the right side user. 
+    # The relationship is defined as seen from the left side user with the name followed, because when I query this relationship 
+    # from the left side I will get the list of followed users (i.e those on the right side)
+    followed = db.relationship(
+        # 'User' is the right side entity of the relationship (the left side entity is the parent class)
+        # secondary configures the association table that is used for this relationship
+        'User', secondary=followers,
+        # primaryjoin indicates the condition that links the left side entity (the follower user) with the association table.
+        primaryjoin=(followers.c.follower_id == id),
+        # secondaryjoin indicates the condition that links the right side entity (the followed user) with the association table.
+        secondaryjoin=(followers.c.followed_id == id),
+        # backref defines how this relationship will be accessed from the right side entity.
+        # lazy is similar to the parameter of the same name in the backref, but this one applies to the left side query instead of the right side.
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+
+    # The two relationships will return messages sent and received for a given user, and on the Message side of the relationship 
+    # will add author and recipient back references.
+    messages_sent = db.relationship('Message',
+                                    foreign_keys='Message.sender_id',
+                                    backref='author', lazy='dynamic')
+    messages_received = db.relationship('Message',
+                                        foreign_keys='Message.recipient_id',
+                                        backref='recipient', lazy='dynamic')
+    # The last_message_read_time field will have the last time the user visited the messages page, and will be used to determine if there are 
+    # unread messages, which will all have a timestamp newer than this field.
+    last_message_read_time = db.Column(db.DateTime)
+
+
     # The __repr__ method tells Python how to print objects of this class
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -66,23 +96,6 @@ class User(UserMixin, db.Model):
         # For users that don't have an avatar registered, an "identicon" image will be generated
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
         return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
-    
-    # db.relationship function is used to define the relationship in the model class
-    # This relationship links User instances to other User instances
-    # Example: let's say that for a pair of users linked by this relationship, the left side user is following the right side user. 
-    # The relationship is defined as seen from the left side user with the name followed, because when I query this relationship 
-    # from the left side I will get the list of followed users (i.e those on the right side)
-    followed = db.relationship(
-        # 'User' is the right side entity of the relationship (the left side entity is the parent class)
-        # secondary configures the association table that is used for this relationship
-        'User', secondary=followers,
-        # primaryjoin indicates the condition that links the left side entity (the follower user) with the association table.
-        primaryjoin=(followers.c.follower_id == id),
-        # secondaryjoin indicates the condition that links the right side entity (the followed user) with the association table.
-        secondaryjoin=(followers.c.followed_id == id),
-        # backref defines how this relationship will be accessed from the right side entity.
-        # lazy is similar to the parameter of the same name in the backref, but this one applies to the left side query instead of the right side.
-        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
     
     # The follow() and unfollow() methods use the append() and remove() methods of the relationship object
     def follow(self, user):
@@ -131,6 +144,13 @@ class User(UserMixin, db.Model):
         # If the token is valid, then the value of the reset_password key from the token's payload is the ID of the user, so I can load the user and return it.
         return User.query.get(id)
 
+    # The new_messages() helper method actually uses last_message_read_time field to return how many unread messages the user has.
+    def new_messages(self):
+        last_read_time = self.last_message_read_time or datetime(1900, 1, 1)
+        return Message.query.filter_by(recipient=self).filter(
+            Message.timestamp > last_read_time).count()
+
+
 # The new Post class will represent listings posted by users   
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -144,3 +164,13 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post {}>'.format(self.post_title)
+    
+# Message model extends the database to support private messages
+# There are two user foreign keys, one for the sender and one for the recipient. The User model can get relationships for these two users, 
+# plus a new field that indicates what was the last time users read their private messages
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    body = db.Column(db.String(140))
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
