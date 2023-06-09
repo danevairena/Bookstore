@@ -1,11 +1,13 @@
-from flask import jsonify, request, url_for
+from flask import jsonify, request, url_for, abort
 from api import app, db
 from api.models import User
 from api.errors import bad_request
+from api.auth import token_auth
 
 # Retrieve a single user, given by id
 # The view function receives the id for the requested user as a dynamic argument in the URL.
 @app.route('/users/<int:id>', methods=['GET'])
+@token_auth.login_required
 def get_user(id):
     # The advantage of get_or_404() over get() is that it removes the need to check the result of the query -
     # when the id does not exist, it aborts the request and returns a 404 error to the client.
@@ -13,6 +15,7 @@ def get_user(id):
 
 # Return the collection of all users.
 @app.route('/users', methods=['GET'])
+@token_auth.login_required
 def get_users():
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 10, type=int), 100)
@@ -23,6 +26,7 @@ def get_users():
 
 # Endpoint that returns the followers
 @app.route('/users/<int:id>/followers', methods=['GET'])
+@token_auth.login_required
 def get_followers(id):
     user = User.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
@@ -32,6 +36,7 @@ def get_followers(id):
 
 # Endpoint that returns the followed users
 @app.route('/users/<int:id>/followed', methods=['GET'])
+@token_auth.login_required
 def get_followed(id):
     user = User.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
@@ -41,6 +46,7 @@ def get_followed(id):
 
 # The POST request to the /users route is going to be used to register new user accounts.
 @app.route('/users', methods=['POST'])
+@token_auth.login_required
 def create_user():
     # Ensure that I always get a dictionary using the expression request.get_json() or {}
     data = request.get_json() or {}
@@ -66,7 +72,10 @@ def create_user():
 
 # Endpoint to modify user
 @app.route('/users/<int:id>', methods=['PUT'])
+@token_auth.login_required
 def update_user(id):
+    if token_auth.current_user().id != id:
+        abort(403)
     user = User.query.get_or_404(id)
     # Ensure that I always get a dictionary using the expression request.get_json() or {}
     data = request.get_json() or {}
