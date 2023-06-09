@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from api import db, app
 from flask import url_for
 # Werkzeug implements password hashing - the password is transformed into a long encoded string 
@@ -14,7 +14,7 @@ from hashlib import md5
 from time import time
 # JSON Web Token
 import jwt
-import json
+import json, base64, os
 
 
 
@@ -70,6 +70,10 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    # adding a token attribute to the user model
+    token = db.Column(db.String(32), index=True, unique=True)
+    token_expiration = db.Column(db.DateTime)
+
     # db.relationship is not an actual database field, but a high-level view of the relationship between users and posts
     # For a one-to-many relationship, a db.relationship field is normally defined on the "one" side, 
     # and is used as a convenient way to get access to the "many".
@@ -227,6 +231,32 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
         # The new_user argument determines if this is a new user registration, which means that a password is included.
         if new_user and 'password' in data:
             self.set_password(data['password'])
+
+    # The get_token() method returns a token for the user. The token is generated as a random string that is encoded in base64 so that all the characters 
+    # are in the readable range. Before a new token is created, this method checks if a currently assigned token has at least a minute left before expiration, 
+    # and in that case the existing token is returned.
+    def get_token(self, expires_in=3600):
+        now = datetime.utcnow()
+        if self.token and self.token_expiration > now + timedelta(seconds=60):
+            return self.token
+        self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
+        self.token_expiration = now + timedelta(seconds=expires_in)
+        db.session.add(self)
+        return self.token
+
+    # When working with tokens it is always good to have a strategy to revoke a token immediately, instead of only relying on the expiration date
+    # The revoke_token() method makes the token currently assigned to the user invalid, simply by setting the expiration date to one second before the current time.
+    def revoke_token(self):
+        self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
+
+    # The check_token() method is a static method that takes a token as input and returns the user this token belongs to as a response. 
+    # If the token is invalid or expired, the method returns None.
+    @staticmethod
+    def check_token(token):
+        user = User.query.filter_by(token=token).first()
+        if user is None or user.token_expiration < datetime.utcnow():
+            return None
+        return user
 
 # The new Post class will represent listings posted by users   
 class Post(db.Model):
