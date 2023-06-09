@@ -13,6 +13,7 @@ from hashlib import md5
 from time import time
 # JSON Web Token
 import jwt
+import json
 
 
 
@@ -76,6 +77,9 @@ class User(UserMixin, db.Model):
     # unread messages, which will all have a timestamp newer than this field.
     last_message_read_time = db.Column(db.DateTime)
 
+    # Relationship with the notification model
+    notifications = db.relationship('Notification', backref='user',
+                                    lazy='dynamic')
 
     # The __repr__ method tells Python how to print objects of this class
     def __repr__(self):
@@ -149,6 +153,13 @@ class User(UserMixin, db.Model):
         last_read_time = self.last_message_read_time or datetime(1900, 1, 1)
         return Message.query.filter_by(recipient=self).filter(
             Message.timestamp > last_read_time).count()
+    
+    # This method not only adds a notification for the user to the database, but also ensures that if a notification with the same name already exists, it is removed first.
+    def add_notification(self, name, data):
+        self.notifications.filter_by(name=name).delete()
+        n = Notification(name=name, payload_json=json.dumps(data), user=self)
+        db.session.add(n)
+        return n
 
 
 # The new Post class will represent listings posted by users   
@@ -174,3 +185,18 @@ class Message(db.Model):
     recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     body = db.Column(db.String(140))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+
+# Notification model to keep track of notifications for all users
+# A notification is going to have a name, an associated user, a Unix timestamp and a payload
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    timestamp = db.Column(db.Float, index=True, default=time)
+    # The payload is going to be different for each type of notification, so I'm writing it as a JSON string, 
+    # as that will allow me to write lists, dictionaries or single values such as numbers or strings.
+    payload_json = db.Column(db.Text)
+
+    def get_data(self):
+        return json.loads(str(self.payload_json))

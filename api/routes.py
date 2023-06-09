@@ -1,9 +1,9 @@
 from api import app, db
 from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm, ResetPasswordRequestForm
 from api.forms import ResetPasswordForm, MessageForm
-from flask import redirect, url_for, request
+from flask import jsonify, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
-from api.models import Post, User, Message
+from api.models import Post, User, Message, Notification
 from werkzeug.urls import url_parse
 from datetime import datetime
 from api.email import send_password_reset_email
@@ -272,6 +272,9 @@ def send_message(recipient):
                       body=form.message.data)
         db.session.add(msg)
         db.session.commit()
+        # Update notifications for the user
+        user.add_notification('unread_message_count', user.new_messages())
+        db.session.commit()
         return redirect(url_for('main.user', username=recipient))
     # TODO -------------
     return 
@@ -283,6 +286,7 @@ def send_message(recipient):
 def messages():
     # update the User.last_message_read_time field with the current time
     current_user.last_message_read_time = datetime.utcnow()
+    current_user.add_notification('unread_message_count', 0)
     db.session.commit()
     page = request.args.get('page', 1, type=int)
     # Querying the Message model for the list of messages, sorted by timestamp from newer to older.
@@ -296,4 +300,21 @@ def messages():
         if messages.has_prev else None
     # TODO -------
     return 
+
+# Route that the client can use to retrieve notifications for the logged in user
+@app.route('/notifications')
+@login_required
+# Function that returns a JSON payload with a list of notifications for the user. Each notification is given as a dictionary 
+# with three elements, the notification name, the additional data that pertains to the notification (such as the message count), 
+# and the timestamp. The notifications are delivered in the order they were created, from oldest to newest.
+def notifications():
+    # The since option can be included in the query string of the request URL, with the unix timestamp of the starting time, 
+    # as a floating point number. Only notifications that occurred after this time will be returned if this argument is included.
+    since = request.args.get('since', 0.0, type=float)
+    notifications = current_user.notifications.filter(Notification.timestamp > since).order_by(Notification.timestamp.asc())
+    return jsonify([{
+        'name': n.name,
+        'data': n.get_data(),
+        'timestamp': n.timestamp
+    } for n in notifications])
 

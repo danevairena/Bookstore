@@ -1,7 +1,7 @@
 # Main application module
 
 from api import app, db
-from api.models import User, Post
+from api.models import User, Post, Notification, Message
 
 
 # With a regular interpreter session, the app symbol is not known unless it is explicitly imported, 
@@ -11,4 +11,4 @@ from api.models import User, Post
 # After you add the shell context processor function you can work with database entities without having to import them
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'User': User, 'Post': Post}
+    return {'db': db, 'User': User, 'Post': Post, 'Message': Message,'Notification': Notification}
