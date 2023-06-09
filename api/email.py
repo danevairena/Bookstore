@@ -1,7 +1,6 @@
 from flask_mail import Message
-from flask import current_app
-from api import mail
-
+from flask import render_template
+from api import mail, app
 # support for running asynchronous tasks by threading
 from threading import Thread
 
@@ -17,5 +16,15 @@ def send_email(subject, sender, recipients, text_body, html_body):
     msg = Message(subject, sender=sender, recipients=recipients)
     msg.body = text_body
     msg.html = html_body
-    Thread(target=send_async_email, args=(current_app, msg)).start()
+    Thread(target=send_async_email, args=(app, msg)).start()
 
+# Send password reset email function.
+def send_password_reset_email(user):
+    token = user.get_reset_password_token()
+    send_email('[Bookstore] Reset Your Password',
+               sender=app.config['ADMINS'][0],
+               recipients=[user.email],
+               text_body=render_template('reset_password.txt',
+                                         user=user, token=token),
+               html_body=render_template('reset_password.html',
+                                         user=user, token=token))
