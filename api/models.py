@@ -1,5 +1,6 @@
 from datetime import datetime
 from api import db, app
+from flask import url_for
 # Werkzeug implements password hashing - the password is transformed into a long encoded string 
 # through a series of cryptographic operations that have no known reverse operation, which means 
 # that a person that obtains the hashed password will be unable to use it to obtain the original password.
@@ -32,8 +33,37 @@ followers = db.Table('followers',
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 
+# PaginatedAPIMixin class implemented in a generic way, that any models that need pagination can inherit from
+class PaginatedAPIMixin(object):
+    @staticmethod
+    # The to_collection_dict() method produces a dictionary with the user collection representation, including the items, _meta and _links sections
+    # The first three arguments are a Flask-SQLAlchemy query object, a page number and a page size - determine what are the items that are going to be returned.
+    def to_collection_dict(query, page, per_page, endpoint, **kwargs):
+        # The paginate() method of the query object obtains a page worth of items
+        resources = query.paginate(page=page, per_page=per_page,
+                                   error_out=False)
+        data = {
+            'items': [item.to_dict() for item in resources.items],
+            '_meta': {
+                'page': page,
+                'per_page': per_page,
+                'total_pages': resources.pages,
+                'total_items': resources.total
+            },
+            '_links': {
+                # kwargs - additional keyword arguments
+                'self': url_for(endpoint, page=page, per_page=per_page,
+                                **kwargs),
+                'next': url_for(endpoint, page=page + 1, per_page=per_page,
+                                **kwargs) if resources.has_next else None,
+                'prev': url_for(endpoint, page=page - 1, per_page=per_page,
+                                **kwargs) if resources.has_prev else None
+            }
+        }
+        return data
+
 # The User class inherits from db.Model, a base class for all models from Flask-SQLAlchemy. 
-class User(UserMixin, db.Model):
+class User(PaginatedAPIMixin, UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
@@ -161,6 +191,42 @@ class User(UserMixin, db.Model):
         db.session.add(n)
         return n
 
+    # to_dict() method converts a user object to a Python representation, which will then be converted to JSON
+    def to_dict(self, include_email=False):
+        data = {
+            'id': self.id,
+            'username': self.username,
+            # last_seen field is generated through the isoformat() method
+            # The Z at the end is ISO 8601's timezone code for UTC
+            'last_seen': self.last_seen.isoformat() + 'Z',
+            'about_me': self.about_me,
+            'post_count': self.posts.count(),
+            'follower_count': self.followers.count(),
+            'followed_count': self.followed.count(),
+            # Hypermedia links
+            # url_for() is used to generate the URLs (which currently point to the placeholder view functions, defined in users.py)
+            '_links': {
+                'self': url_for('api.get_user', id=self.id),
+                'followers': url_for('api.get_followers', id=self.id),
+                'followed': url_for('api.get_followed', id=self.id),
+                'avatar': self.avatar(128)
+            }
+        }
+        # Include the email only when users request their own data
+        # include_email flag to determine if that field gets included in the representation or not
+        if include_email:
+            data['email'] = self.email
+        return data
+    
+    # from_dict() method that achieves the conversion from a Python dictionary to a model
+    def from_dict(self, data, new_user=False):
+        for field in ['username', 'email', 'about_me']:
+            # check if I there is a value provided in the data argument, and if there is setattr() sets the new value in the corresponding attribute for the object
+            if field in data:
+                setattr(self, field, data[field])
+        # The new_user argument determines if this is a new user registration, which means that a password is included.
+        if new_user and 'password' in data:
+            self.set_password(data['password'])
 
 # The new Post class will represent listings posted by users   
 class Post(db.Model):
@@ -200,3 +266,4 @@ class Notification(db.Model):
 
     def get_data(self):
         return json.loads(str(self.payload_json))
+
