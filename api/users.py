@@ -46,7 +46,6 @@ def get_followed(id):
 
 # The POST request to the /users route is going to be used to register new user accounts.
 @app.route('/users', methods=['POST'])
-@token_auth.login_required
 def create_user():
     # Ensure that I always get a dictionary using the expression request.get_json() or {}
     data = request.get_json() or {}
