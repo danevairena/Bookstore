@@ -19,7 +19,7 @@ export default function Header() {
                 <Nav.Link href="/">Home</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Explore</Nav.Link>
+                <Nav.Link href="/explore">Explore</Nav.Link>
             </Nav.Item>
             <Nav.Item>
                 <Nav.Link href="#link">Sell</Nav.Link>
