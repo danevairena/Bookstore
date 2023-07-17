@@ -4,6 +4,10 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import ExplorePage from './pages/ExplorePage';
 import LoginPage from './pages/LoginPage';
+import SellPage from './pages/SellPage';
+import AccountPage from './pages/AccoutPage';
+import MessagesPage from './pages/MessagesPage';
+import UserPage from './pages/UserPage';
 
 export default function App() {
   return (
@@ -20,6 +24,10 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/user/:username" element={<UserPage />} />
+          <Route path="/sell" element={<SellPage />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
 
           {/* Navigate is a special component that allows to redirect from one route to another. 
           The * works as a catch-all route for any URLs that are not matched by the routes declared above it. 

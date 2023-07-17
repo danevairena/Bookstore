@@ -3,6 +3,7 @@ import Nav from 'react-bootstrap/Nav';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import { NavLink } from 'react-router-dom';
 
 
 export default function Header() {
@@ -15,20 +16,21 @@ export default function Header() {
             <Button variant="outline-dark" size="sm">Search</Button>
         </Form>
         <Nav variant="underline" defaultActiveKey="/"className="justify-content-end">
+            {/* NavLink component from React-Router is used to generate an SPA links */}
             <Nav.Item>
-                <Nav.Link href="/">Home</Nav.Link>
+                <Nav.Link as={NavLink} to="/" href="/">Home</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="/explore">Explore</Nav.Link>
+                <Nav.Link as={NavLink} to="/explore" eventKey="/explore">Explore</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Sell</Nav.Link>
+                <Nav.Link as={NavLink} to="/sell" eventKey="/sell">Sell</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Account</Nav.Link>
+                <Nav.Link as={NavLink} to="/account" eventKey="/account">Account</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Messages</Nav.Link>
+                <Nav.Link as={NavLink} to="/messages" eventKey="/messages">Messages</Nav.Link>
             </Nav.Item>
         </Nav>
       </Container>
