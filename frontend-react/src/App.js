@@ -1,25 +1,46 @@
-import logo from './logo.svg';
-import './App.css';
+import Container from 'react-bootstrap/Container';
+import Header from './components/Header';
 
-function App() {
+export default function App() {
+  const posts = [
+    {
+      id: 1,
+      text: 'Hello, world!',
+      timestamp: 'a minute ago',
+      author: {
+        username: 'susan',
+      },
+    },
+    {
+      id: 2,
+      text: 'Second post',
+      timestamp: 'an hour ago',
+      author: {
+        username: 'john',
+      },
+    },
+  ];
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container fluid className='App'>
+      <Header />
+      <Container>
+        {posts.length === 0 ?
+          <p>There are no posts to show.</p>
+        :
+          posts.map(post => {
+            return (
+              <Container fluid className="App">
+                <p key={post.id}>
+                  <b>{post.author.username}</b> &mdash; {post.timestamp}
+                  <br />
+                  {post.text}
+                </p>
+              </Container>
+            );
+          })
+        }
+      </Container>
+    </Container>
   );
 }
-
-export default App;

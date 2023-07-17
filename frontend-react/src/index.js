@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
+// App represents a hierarchical collection of elements that represent the entire application
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 

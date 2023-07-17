@@ -11,3 +11,12 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Custom styles for App and Header components */
+.App {
+  padding: 0;
+}
+
+.Header {
+  border-bottom: 1px solid black;
+}
