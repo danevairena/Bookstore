@@ -22,13 +22,13 @@ export default function Header() {
                 <Nav.Link href="#link">Explore</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Messages</Nav.Link>
+                <Nav.Link href="#link">Sell</Nav.Link>
             </Nav.Item>
             <Nav.Item>
                 <Nav.Link href="#link">Account</Nav.Link>
             </Nav.Item>
             <Nav.Item>
-                <Nav.Link href="#link">Sell</Nav.Link>
+                <Nav.Link href="#link">Messages</Nav.Link>
             </Nav.Item>
         </Nav>
       </Container>
