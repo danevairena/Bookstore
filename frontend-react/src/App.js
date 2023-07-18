@@ -24,6 +24,8 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* To define a route with a dynamic section, the path attribute of the Route component uses a special syntax with a : prefix */}
           <Route path="/user/:username" element={<UserPage />} />
           <Route path="/sell" element={<SellPage />} />
           <Route path="/account" element={<AccountPage />} />

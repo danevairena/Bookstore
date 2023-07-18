@@ -1,10 +1,10 @@
 import Container from 'react-bootstrap/Container';
+import LoginForm from '../components/LoginForm';
 
 export default function LoginPage() {
     return (
       <Container className="Content">
-        <h1>Login form</h1>
-        <p>TODO</p>
+        <LoginForm />
       </Container>
     );
   }

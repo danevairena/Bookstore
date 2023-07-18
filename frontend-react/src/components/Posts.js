@@ -1,47 +1,45 @@
+import { useState, useEffect } from 'react';
+import Spinner from 'react-bootstrap/Spinner';
+import Post from './Post';
+
+const BASE_API_URL = process.env.REACT_APP_BASE_API_URL;
+
 export default function Posts() {
-    const posts = [
-      {
-        id: 1,
-        post_title: 'Zog!',
-        descriprion: 'new child book',
-        price: '25',
-        timestamp: 'a minute ago',
-        author: {
-          username: 'susan',
-        },
-      },
-      {
-        id: 2,
-        post_title: 'Book2',
-        descriprion: 'mommy book',
-        price: '10',
-        timestamp: 'an hour ago',
-        author: {
-          username: 'jane',
-        },
-      },
-    ];
-  
-    return (
-      <>
-        {posts.length === 0 ?
-          <p>There are no posts.</p>
-        :
-          posts.map(post => {
-            return (
-              <p key={post.id}>
-                <b>{post.author.username}</b> &mdash; {post.timestamp}
-                <br />
-                {post.post_title}
-                <br />
-                {post.descriprion}
-                <br />
-                {post.price}
-                <br />
-              </p>
-            );
-          })
-        }
-      </>
-    );
-  }
+  const [posts, setPosts] = useState();
+
+  // Side effect function to request posts here
+  useEffect(() => {
+    (async () => {
+      const response = await fetch(BASE_API_URL + '/explore');
+      if (response.ok) {
+        const results = await response.json();
+        setPosts(results.data);
+      }
+      else {
+        setPosts(null);
+      }
+    })();
+  }, []);
+
+  return (
+    <>
+      {posts === undefined ?
+        <Spinner animation="border" />
+      :
+        <>
+          {posts === null ?
+             <p>Could not retrieve blog posts.</p>
+          :
+            <>
+              {posts.length === 0 ?
+                <p>There are no blog posts.</p>
+              :
+                posts.map(post => <Post key={post.id} post={post} />)
+              }
+            </>
+          }
+        </>
+      }
+    </>
+  );
+}

@@ -20,3 +20,26 @@ code {
 .Header {
   border-bottom: 1px solid black;
 }
+
+.Content {
+  margin-top: 10px;
+}
+
+.Post {
+  align-items: start;
+  padding-top: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.Post:hover {
+  background-color: #f8f8f8;
+}
+
+.Post a {
+  color: #14c;
+  text-decoration: none;
+}
+
+.Post a:visited {
+  color: #14c;
+}

@@ -17,9 +17,12 @@ from flask_login import LoginManager
 # Flask extension for sending e-mails
 from flask_mail import Mail
 
+from flask_cors import CORS
 
 
 app = Flask(__name__)
+
+CORS(app)
 
 # Tell Flask to read and apply the config file
 app.config.from_object(Config)

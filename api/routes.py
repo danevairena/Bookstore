@@ -1,3 +1,4 @@
+from mmap import PAGESIZE
 from api import app, db
 from api.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm, ResetPasswordRequestForm
 from api.forms import ResetPasswordForm, MessageForm
@@ -37,10 +38,8 @@ def index():
     # TODO ---------
     return 
 
-# Works like the home page, but it shows posts from all user, instead of only the followed ones
-@app.route('/explore')
-@login_required
-def explore():
+@app.route('/homefeed', methods=['GET'])
+def homefeed():
     # Determine the page number to display, either from the page query string argument or a default 
     # of 1, and then use the paginate() method to retrieve only the desired page of results.
     page = request.args.get('page', 1, type=int)
@@ -53,7 +52,33 @@ def explore():
     prev_url = url_for('explore', page=posts.prev_num) \
         if posts.has_prev else None
     # TODO ---------
-    return
+    return posts
+
+
+@app.route('/userfeed', methods=['GET'])
+@login_required
+def userfeed():
+    """Retrieve the user's post feed"""
+    user = current_user().paginate(
+        page=PAGESIZE, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    return user.followed_posts_select()
+
+# Works like the home page, but it shows posts from all user, instead of only the followed ones
+@app.route('/explore')
+def explore():
+    # Determine the page number to display, either from the page query string argument or a default 
+    # of 1, and then use the paginate() method to retrieve only the desired page of results.
+    page = request.args.get('page', 1, type=int)
+    posts = Post.select().all().paginate(
+        page=page, per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    # The next_url and prev_url in these two view functions are going to be set to a URL returned by 
+    # url_for() only if there is a page in that direction.
+    next_url = url_for('explore', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) \
+        if posts.has_prev else None
+    
+    return posts
 
 # The methods argument in the route decorator tells Flask that this view function 
 # accepts GET and POST requests, overriding the default, which is to accept only GET requests.
