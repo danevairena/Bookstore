@@ -15,6 +15,8 @@ from time import time
 # JSON Web Token
 import jwt
 import json, base64, os
+import sqlalchemy as sa
+from sqlalchemy import orm as so
 
 
 
@@ -163,6 +165,12 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
         # order_by query sorts the results by the timestamp field of the post in descending order - the first result will be the most recent post
         return followed.union(own).order_by(Post.timestamp.desc())
 
+    def followed_posts_select(self):
+        Author = so.aliased(User)
+        return Post.select().join(Post.author.of_type(Author)).join(
+            Author.followers, isouter=True).group_by(Post).where(
+                sa.or_(Post.author == self, User.id == self.id))
+    
     # Token generation and verification methods
     # The get_reset_password_token() function returns a JWT token as a string, which is generated directly by the jwt.encode() function.
     def get_reset_password_token(self, expires_in=600):
@@ -271,6 +279,7 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post {}>'.format(self.post_title)
+    
     
 # Message model extends the database to support private messages
 # There are two user foreign keys, one for the sender and one for the recipient. The User model can get relationships for these two users, 
